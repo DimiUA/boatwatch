@@ -131,9 +131,8 @@ function setupPush(){
             }
             else if (data && data.additionalData && data.additionalData.payload){
                //if user NOT using app and push notification comes
-                var container = $$('body');
-                if (container.children('.progressbar, .progressbar-infinite').length) return; //don't run all this if there is a current progressbar loading
-                App.showProgressbar(container); 
+                
+                App.showIndicator(); 
                
                 loginTimer = setInterval(function() {
                     //alert(localStorage.loginDone);
@@ -142,7 +141,7 @@ function setupPush(){
                         setTimeout(function(){
                             //alert('before processClickOnPushNotification');
                             processClickOnPushNotification([data.additionalData.payload]);
-                            App.hideProgressbar(container);               
+                            App.showIndicator();               
                         },1000); 
                     }
                 }, 1000); 
@@ -3844,7 +3843,7 @@ function processClickOnPushNotification(msgJ){
         }
         
         if (msg && msg.time && msg.name && msg.title) {
-            var activePage = App.getCurrentView().activePage;  
+            //var activePage = App.getCurrentView().activePage;  
            
             //if ( typeof(activePage) == 'undefined' || (activePage && activePage.name != "notification")) {               
            /* if ( typeof(activePage) == 'undefined' || (activePage && activePage.name != "notification")) {
