@@ -113,11 +113,11 @@
 }
 .icon-satellite:before {
   content: "\e90d";
- 
+  
 }
 .icon-signal:before {
   content: "\e90e";
- 
+  
 }
 .icon-speed .path1:before {
   content: "\e90f";
@@ -139,7 +139,7 @@
 }
 .icon-add_geofence:before {
   content: "\e921";
- 
+  
 }
 .icon-geofence2:before {
   content: "\e91f";
@@ -147,7 +147,7 @@
 }
 .icon-geofence_menu:before {
   content: "\e920";
- 
+  
 }
 .icon-apply2:before {
   content: "\e91d";

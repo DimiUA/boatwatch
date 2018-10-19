@@ -1,48 +1,57 @@
-<div class="page  " data-page="alarms.assets">
-	<div class="navbar bg-white bw_top_shadow color-black">
-        <div class="navbar-inner">
-            <div class="left">
-            	<a href="#" class="link back color-black"> <i class="f7-icons">arrow_left</i></a>
-            </div>
-            <div class="left navbar_title navbar_title_index">{{@global.LANGUAGE.ALARM_MSG06}}</div>
-            <div class="right">
-                <a href="#" class="link button_search" ><i class="f7-icons">search</i></a>            	
-                <a href="#" class="link color-boatwatch saveAssets"><i class="f7-icons">check</i></a>          	
-            </div>
+
+<div class="navbar ">
+    <div class="navbar-inner">
+        <div class="left">
+            <a href="#" class="link back"> <i class="icon icon-arrow_back"></i></a>
         </div>
-        <form class="searchbar navbar-inner theme-white dislay_none searchbarAlarmsAssets" >
+        <div class="center sliding">{{@global.LANGUAGE.ALARM_MSG06}}</div>
+        <div class="right sliding">
+            <a href="#" class="link saveAssets"><i class="f7-icons">check</i></a>               
+        </div>
+    </div>
+</div>    
+
+<div class="pages">
+    <div class="page bg-color-page " data-page="alarms.assets">
+    	
+    	
+    	<form class="searchbar searchbarAlarmsAssets" >
             <div class="searchbar-input">
                 <input type="search" placeholder="{{@global.LANGUAGE.COM_MSG06}}">
                 <a href="#" class="searchbar-clear"></a>
             </div>
-            <a href="#" class="searchbar-cancel">{{@global.LANGUAGE.COM_MSG04}}</a>
-        </form>
-    </div>   
-	
-    <div class="searchbar-overlay"></div>
+            <a href="#" class="searchbar-cancel color-black">{{@global.LANGUAGE.COM_MSG04}}</a>
+        </form>        
 
-    <div class="page-content">
-        <div class="list-block no-hairlines list-block-selectall">
-            <li class="bw-li-switch">
-                <div class="item-content">                               
-                    <div class="item-inner">
-                        <div class="item-title">{{@global.LANGUAGE.COM_MSG30}}</div>                        
-                        <label class="label-switch">
-                            <input type="checkbox" name="select-all" >
-                            <div class="checkbox"></div>
-                        </label>                        
-                    </div>
-                </div>
-            </li>
-        </div>
+        <div class="searchbar-overlay"></div>
 
-		<div class="content-block alarms-assets-search-nothing-found searchbar-not-found">                               
-            {{@global.LANGUAGE.COM_MSG05}}
-        </div>        
-        <div class="list-block media-list virtual-list list-block-search-alarms-assets alarmsAssetList">          
+        <div class="page-content">
+            <div class="list-block no-hairlines  media-list list-block-selectall">
+                <ul>
+                    <li class="item-content alarm_title">                                   
+                        <div class="item-inner">
+                            <div class="item-title-row">
+                                <div class="item-title">{{@global.LANGUAGE.COM_MSG30}}</div>
+                                <div class="item-after">
+                                    <label class="label-switch  ">
+                                        <input type="checkbox" name="select-all" >
+                                        <div class="checkbox"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>                  
+                    </li>
+                </ul> 
+            </div>
+
+    		<div class="content-block alarms-assets-search-nothing-found searchbar-not-found color-white">                               
+                {{@global.LANGUAGE.COM_MSG05}}
+            </div>        
+            <div class="list-block media-list virtual-list list-block-search-alarms-assets  alarmsAssetList">          
+                
+            </div>
             
         </div>
-        
-    </div>
 
+    </div>
 </div>

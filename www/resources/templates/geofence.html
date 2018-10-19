@@ -1,34 +1,47 @@
-<div class="page geofence_page" data-page="geofence">
-	<div class="navbar bg-white color-black bw_top_shadow">
-        <div class="navbar-inner">
-            <div class="left">
-            	<!-- <a href="#" class="back link color-black"> <i class="f7-icons">arrow_left</i></a> -->
-            	<a href="#" class="link icon-only open-panel color-black"> <i class="f7-icons">bars</i></a>
-            </div>
-            <div class="left navbar_title navbar_title_index">{{@global.LANGUAGE.MENU_MSG01}}</div>
-           	<div class="right">
-                <a href="#" class="link color-boatwatch button_search" ><i class="f7-icons">search</i></a>
-           		<a href="#" class="link color-boatwatch addGeofence"><i class="icon-add_geofence"></i></a>
-           	</div>
+<div class="navbar">
+    <div class="navbar-inner">
+        <div class="left">           
+            <a href="#" class="link icon-only open-panel"> <i class="icon icon-menu"></i></a>
         </div>
-        <!-- Search Bar -->
-                <form class="searchbar searchbarGeofence navbar-inner theme-white dislay_none" >
+        <div class="center sliding">{{@global.LANGUAGE.MENU_MSG01}}</div>
+        <div class="right">            
+            <a href="#" class="link  addGeofence"><i class="icon icon-add"></i></a>
+        </div>
+        <!-- <div class="subnavbar">
+            <div class="buttons-row">
+                <form class="searchbar searchbarGeofence" >
                     <div class="searchbar-input">
                         <input type="search" placeholder="{{@global.LANGUAGE.COM_MSG06}}">
                         <a href="#" class="searchbar-clear"></a>
                     </div>
                     <a href="#" class="searchbar-cancel">{{@global.LANGUAGE.COM_MSG04}}</a>
                 </form>
-    </div>
+            </div>
+        </div> -->
+    </div>                
+</div>
+<!-- with-subnavbar -->
+<div class="pages">
+    <div class="page  geofence_page" data-page="geofence">
+        <form class="searchbar searchbarGeofence" >
+            <div class="searchbar-input">
+                <input type="search" placeholder="{{@global.LANGUAGE.COM_MSG06}}">
+                <a href="#" class="searchbar-clear"></a>
+            </div>
+            <a href="#" class="searchbar-cancel">{{@global.LANGUAGE.COM_MSG04}}</a>
+        </form>
+        <div class="searchbar-overlay"></div>
 
-    <div class="searchbar-overlay"></div>
-
-    <div class="page-content">
-        <div class="list-block media-list no-hairlines list-block-search-geofence geofenceList">          
-            
+        <div class="page-content">
+            <div class="content-block searchbar-not-found searchbar-not-found-geofence">
+                {{@global.LANGUAGE.COM_MSG05}}
+            </div>
+            <div class="list-block media-list no-hairlines list-block-search-geofence searchbar-found-geofence geofenceList">          
+                
+            </div>
         </div>
+      
     </div>
-  
 </div>
 
 <!-- 

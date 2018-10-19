@@ -14,7 +14,7 @@ function guid() {
   return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
 }
 
-
+//alert('simple alert');
 function getPlusInfo(){
     var uid = guid();
     if(window.device) {                        
@@ -50,21 +50,19 @@ var pushConfigRetry = 0;
 if( navigator.userAgent.match(/Windows/i) ){    
     inBrowser = 1;
 }
+
 document.addEventListener("deviceready", onDeviceReady, false ); 
 
+//function onPlusReady(){   
 function onDeviceReady(){ 
     //fix app images and text size
     if (window.MobileAccessibility) {
         window.MobileAccessibility.usePreferredTextZoom(false);    
     }
-
-    
-    //if (device.platform == 'iOS' && StatusBar) {
     if (StatusBar) {
         StatusBar.styleDefault();
-    }   
+    } 
 
-    
     setupPush();
 
     getPlusInfo(); 
@@ -105,8 +103,7 @@ function setupPush(){
 
         push.on('registration', function(data) {
             console.log('registration event: ' + data.registrationId);  
-            //$$('.regToken').val(JSON.stringify(data));
-            //App.alert( JSON.stringify(data) );         
+            //alert( JSON.stringify(data) );         
 
             //localStorage.PUSH_DEVICE_TOKEN = data.registrationId;
            
@@ -127,30 +124,29 @@ function setupPush(){
         push.on('notification', function(data) {            
             //alert( JSON.stringify(data) );
 
-
             //if user using app and push notification comes
             if (data && data.additionalData && data.additionalData.foreground) {
-               // if application open, show popup    
-               
+               // if application open, show popup               
                showMsgNotification([data.additionalData]);
             }
             else if (data && data.additionalData && data.additionalData.payload){
-               //if user NOT using app and push notification comes                
-                App.showIndicator();
+               //if user NOT using app and push notification comes
+                var container = $$('body');
+                if (container.children('.progressbar, .progressbar-infinite').length) return; //don't run all this if there is a current progressbar loading
+                App.showProgressbar(container); 
+               
                 loginTimer = setInterval(function() {
                     //alert(localStorage.loginDone);
                     if (localStorage.loginDone) {
                         clearInterval(loginTimer);
-                        setTimeout(function(){     
-                            //alert('before processClickOnPushNotification');                       
+                        setTimeout(function(){
+                            //alert('before processClickOnPushNotification');
                             processClickOnPushNotification([data.additionalData.payload]);
-                            App.hideIndicator();             
+                            App.hideProgressbar(container);               
                         },1000); 
                     }
                 }, 1000); 
             }
-
-            
             if (device && device.platform && device.platform.toLowerCase() == 'ios') {
                 push.finish(
                     () => {
@@ -165,28 +161,33 @@ function setupPush(){
                     data.additionalData.notId
                 );
             }
+            
                 
         });
 
         if　(!localStorage.ACCOUNT){
-            push.clearAllNotifications();
+            push.clearAllNotifications(
+                () => {
+                  console.log('success');
+                },
+                () => {
+                  console.log('error');
+                }
+            );
         }
 }
 
+
+
 function onAppPause(){ 
-    /*if ($hub) {
-        $hub.stop();
-    }*/
+    
 } 
 function onAppResume(){    
     if (localStorage.ACCOUNT && localStorage.PASSWORD) {
         getNewNotifications(); 
         getNewData();
     }
-   
-    /*if ($hub) {
-        $hub.start();
-    }*/ 
+    
 }  
 
  
@@ -204,13 +205,14 @@ function backFix(event){
 
 // Initialize your app
 var App = new Framework7({
-    swipePanel: 'left',   
-    swipeBackPage: false,
-    material: true,
+    animateNavBackIcon: true,    
+    swipeBackPage: false,    
     //pushState: true,       
+    swipePanel: 'left', 
     allowDuplicateUrls: true,    
     sortable: false,    
     modalTitle: 'BoatWatch',
+    notificationTitle: 'BoatWatch',
     precompileTemplates: true,
     template7Pages: true,
     onAjaxStart: function(xhr){
@@ -226,8 +228,8 @@ var $$ = Dom7;
 
 // Add view
 var mainView = App.addView('.view-main', {
-    domCache: true,  
-    swipeBackPage: false
+    domCache: true,     
+    dynamicNavbar: true,
 });
 
 window.PosMarker = {};
@@ -245,7 +247,6 @@ var POSINFOASSETLIST = {};
 var HistoryArray = [];
 var EventsArray = [];
 var layerControl = false;
-var verifyCheck = {}; // for password reset
 
 var prevStatusLatLng = {
     'lat': 0,
@@ -295,6 +296,8 @@ API_URL.URL_SET_GEOLOCK = API_DOMIAN4 + "asset/GeoLock?MajorToken={0}&MinorToken
 API_URL.URL_ROUTE = "https://www.google.com/maps/dir/?api=1&destination={0},{1}"; //&travelmode=walking
 API_URL.URL_REFRESH_TOKEN = API_DOMIAN1 + "User/RefreshToken";
 
+
+
 var cameraButtons = [
     {
         text: 'Take picture',
@@ -318,19 +321,36 @@ var cameraButtons = [
 ];
 
 
+//http://api.m2mglobaltech.com/QuikTrak/V1/User/Auth?username=tongwei&password=888888&appKey=UcPXWJccwm7bcjvu7aZ7j5&deviceType=android&deviceToken=deviceToken&mobileToken=mobileToken
+//http://api.m2mglobaltech.com/QuikTrak/V1/User/Logoff2?username=tongwei&MinorToken=8944cbf0-7749-4c5e-bdba-8b7c4e47229b&MajorToken=f9087bb0-47ba-4d31-a038-ea676fdf0de2&mobileToken=push mobiletoken
+//http://api.m2mglobaltech.com/QuikTrak/V1/User/Edit?MinorToken=8944cbf0-7749-4c5e-bdba-8b7c4e47229b&MajorToken=f9087bb0-47ba-4d31-a038-ea676fdf0de2&FirstName=Tong&SubName=Wei&Mobile=&Phone=&EMail=tony@quiktrak.net
+//http://api.m2mglobaltech.com/QuikTrak/V1/Device/Edit?MinorToken=588bcf33-1af5-4fb3-8939-0cbc8f949fb3&Code=6562656064&name=testname&speedUnit=KPH&initMileage=8&initAccHours=100&tag=testname1&attr1=Toyota &attr2=Landcruiser&attr3=Black&attr4=2010
+//http://api.m2mglobaltech.com/QuikTrak/V1/Device/GetPosInfo?MinorToken=588bcf33-1af5-4fb3-8939-0cbc8f949fb3&Code=6562656064
+//http://api.m2mglobaltech.com/QuikTrak/V1/Device/GetHisPosArray?MinorToken=588bcf33-1af5-4fb3-8939-0cbc8f949fb3&Code=6562656064&From=2017-02-11T10:00:00&To=2017-02-12T10:00:00
+//http://api.m2mglobaltech.com/QuikTrak/V1/Device/GetPosInfos?MinorToken=588bcf33-1af5-4fb3-8939-0cbc8f949fb3
+//http://api.m2mglobaltech.com/QuikTrak/V1/User/Password?MinorToken=588bcf33-1af5-4fb&oldpwd=888888&newpwd=888888
+//http://api.m2mglobaltech.com/QuikTrak/V1/Device/FenceAdd
+//http://api.m2mglobaltech.com/QuikTrak/V1/Device/GetFenceList
+//http://api.m2mglobaltech.com/QuikTrak/V1/Device/FenceEdit
+//http://api.m2mglobaltech.com/QuikTrak/V1/Device/FenceDelete
 
 var html = Template7.templates.template_Login_Screen();
 $$(document.body).append(html); 
 html = Template7.templates.template_Popover_Menu();
 $$(document.body).append(html);
-html = Template7.templates.template_AssetList();
-$$('.navbar-fixed').append(html);
+/*html = Template7.templates.template_AssetList();
+$$('.navbar-fixed').append(html);*/
+$$('.index-title').html(LANGUAGE.MENU_MSG00);
+$$('.index-search-input').attr('placeholder',LANGUAGE.COM_MSG06);
+$$('.index-search-cancel').html(LANGUAGE.COM_MSG04);
+$$('.index-search-nothing-found').html(LANGUAGE.COM_MSG05);
+
+
 
 
 if (inBrowser) {
     if(getUserinfo().MinorToken) {
-        //login();    
-        preLogin(); 
+        preLogin();     
     }
     else {
         logout();
@@ -354,10 +374,9 @@ var virtualAssetList = App.virtualList('.assets_list', {
     height: function (item) {
         var asset = POSINFOASSETLIST[item.IMEI];        
         var assetFeaturesStatus = Protocol.Helper.getAssetStateInfo(asset);        
-        var height = 110; 
+        var height = 112; 
         if (assetFeaturesStatus && assetFeaturesStatus.voltage && assetFeaturesStatus.fuel || assetFeaturesStatus && assetFeaturesStatus.battery && assetFeaturesStatus.fuel || assetFeaturesStatus && assetFeaturesStatus.battery && assetFeaturesStatus.voltage) {
-            
-            height = 142;
+            height = 152;
         }
         return height; //display the image with 50px height
     },
@@ -368,9 +387,9 @@ var virtualAssetList = App.virtualList('.assets_list', {
         var assetFeaturesStatus = Protocol.Helper.getAssetStateInfo(asset);
         
         var assetImg = getAssetImg(item, {'assetList':true});   
-        
+            
         if (assetFeaturesStatus && assetFeaturesStatus.stats) {
-              
+            
 
         	ret +=  '<li class="item-link item-content item_asset" data-imei="' + item.IMEI + '" data-id="' + item.Id + '">';                    
             ret +=      '<div class="item-media">'+assetImg+'</div>';
@@ -447,8 +466,7 @@ var virtualAssetList = App.virtualList('.assets_list', {
 });
 
 $$('.login-form').on('submit', function (e) {    
-    e.preventDefault();     
-    //login();
+    e.preventDefault(); 
     preLogin(); 
     return false;
 });
@@ -460,16 +478,24 @@ $$('body').on('click', '.deleteAllNotifications', function(){
        removeAllNotifications();
     });
 });
-$$('.button_search').on('click', function(){        
-    $('.searchbar').slideDown(400, function(){
-        $$('.searchbar input').focus();
-    });                
-});
 
 $$('body').on('change keyup input click', '.only_numbers', function(){
     if (this.value.match(/[^0-9-]/g)) {
          this.value = this.value.replace(/[^0-9-]/g, '');
     }
+});
+
+$$('body').on('click', 'a.external', function(event) {
+    event.preventDefault();
+    var href = this.getAttribute('href');
+    if (href) {
+        if (typeof navigator !== "undefined" && navigator.app) {                
+            navigator.app.loadUrl(href, {openExternal: true}); 
+        } else {
+            window.open(href,'_blank');
+        }
+    }
+    return false;
 });
 
 $$('body').on('click', '.toggle-password', function(){
@@ -502,22 +528,9 @@ $$('body').on('click', '.routeButton', function(){
     
 });
 
-$$('body').on('click', 'a.external', function(event) {
-    event.preventDefault();
-    var href = this.getAttribute('href');
-    if (href) {
-        if (typeof navigator !== "undefined" && navigator.app) {                
-            navigator.app.loadUrl(href, {openExternal: true}); 
-        } else {
-            window.open(href,'_blank');
-        }
-    }
-    return false;
-});
-
 $$('#menu li').on('click', function () {
     var id = $$(this).attr('id');
-    var activePage = mainView.activePage;           
+    var activePage = mainView.activePage;        
                 
 
     switch (id){
@@ -527,26 +540,25 @@ $$('#menu li').on('click', function () {
               force: true
             });         
             break;
+
         case 'menuProfile':
             loadProfilePage();
             break;  
-        case 'menuGeofence':
-          /*  var page=App.getCurrentView().activePage;        
-            if(page.name=="geofence"){           
-                App.closePanel();
-            }else{*/
-               loadGeofencePage();
-            /*}*/ 
 
-            break; 
+        case 'menuGeofence':
+            loadGeofencePage(); 
+            break;  
+
         case 'menuAlarms':
             if ( typeof(activePage) == 'undefined' || (activePage && activePage.name != "alarms.assets")) {           
                 loadAlarmsAssetsPage();      
             }
             break; 
+
         case 'menuSupport':                    
             loadPageSupport(); 
-            break;         
+            break;  
+
         case 'menuLogout':
             App.confirm(LANGUAGE.PROMPT_MSG012, LANGUAGE.MENU_MSG04, function () {        
                 logout();
@@ -597,8 +609,8 @@ $$(document).on('click', '.backToIndex', function(e){
 
 $$('.assets_list').on('click', '.item_asset', function(){
     TargetAsset.ASSET_IMEI = $$(this).data("imei");  
-    TargetAsset.ASSET_ID = $$(this).data("id"); 
-    TargetAsset.ASSET_IMG = '';        
+    TargetAsset.ASSET_ID = $$(this).data("id");  
+    TargetAsset.ASSET_IMG = '';       
     var assetList = getAssetList();  
     var asset = assetList[TargetAsset.ASSET_IMEI];  
 
@@ -617,7 +629,7 @@ $$(document).on('change', '.leaflet-control-layers-selector[type="radio"]', func
             iconUrl: 'resources/images/marker2.svg',                       
             iconSize:     [80, 80], // size of the icon                        
                         iconAnchor:   [40, 79], // point of the icon which will correspond to marker's location                        
-                        popupAnchor:  [0, -80] // point from which the popup should open relative to the iconAnchor          
+                        popupAnchor:  [0, -80] // point from which the popup should open relative to the iconAnchor       
         });*/
         var span = $$(this).next();        
         var switcherWrapper = span.find('.mapSwitcherWrapper');
@@ -632,6 +644,9 @@ $$(document).on('change', '.leaflet-control-layers-selector[type="radio"]', func
 App.onPageInit('notification', function(page){
     var notificationContainer = $$(page.container).find('.notification_list');
     virtualNotificationList = App.virtualList(notificationContainer, { 
+        height: function (item) {
+            return 57;
+        },
         items: [],
         renderItem: function (index, item) {
             var ret = '';
@@ -645,7 +660,7 @@ App.onPageInit('notification', function(page){
                 if (typeof item.mileage === "undefined") {
                     item.mileage = '-';
                 }
-                
+
                 ret = '<li class="swipeout" data-id="'+item.listIndex+'" data-title="'+item.title+'" data-type="'+item.type+'" data-imei="'+item.imei+'" data-name="'+item.name+'" data-lat="'+item.lat+'" data-lng="'+item.lng+'" data-time="'+item.time+'" data-speed="'+item.speed+'" data-direct="'+item.direct+'" data-mileage="'+item.mileage+'">' +                        
                             '<div class="swipeout-content item-content">' +
                                 '<div class="item-inner">' +
@@ -668,8 +683,8 @@ App.onPageInit('notification', function(page){
     var user = localStorage.ACCOUNT;
     var notList = getNotificationList();                
 
-    showNotification(notList[user]); 
-    getNewNotifications();       
+    showNotification(notList[user]);  
+    getNewNotifications();      
 
     notificationContainer.on('deleted', '.swipeout', function () {
         var index = $$(this).data('id');       
@@ -682,11 +697,13 @@ App.onPageInit('notification', function(page){
             data.lat = $$(this).data('lat');
             data.lng = $$(this).data('lng');
             data.alarm = $$(this).data('alarm');
+
             var index = $$(this).data('id');
             var list = getNotificationList();
             var user = localStorage.ACCOUNT; 
             var msg = list[user][index];
             var props = null;
+
             if (msg) {
                 if (msg.payload) {
                     props = isJsonString(msg.payload);
@@ -699,18 +716,18 @@ App.onPageInit('notification', function(page){
                         props = msg; 
                     }
                 }
-            }            
+            }
+            //console.log(props);
             if(  props && parseFloat(data.lat) && parseFloat(data.lat)){                
                 TargetAsset.ASSET_IMEI = props.Imei ? props.Imei : props.imei;                
                 loadTrackPage(props);                              
             }else{
                 App.alert(LANGUAGE.PROMPT_MSG023);
-            } 
+            }
 
         }            
     });
 });
-
 
 App.onPageInit('forgotPwd', function(page) {
     App.closeModal();
@@ -810,14 +827,14 @@ App.onPageInit('asset.status', function (page) {
     $$('.buttonAssetEdit').on('click', function(){
          
         var assetList = getAssetList();  
-        var asset = assetList[TargetAsset.ASSET_IMEI]; 
+        var asset = assetList[TargetAsset.ASSET_IMEI];
         var AssetImg = 'resources/images/svg_default_asset_photo.svg';
         if (asset && asset.Icon) {
             var pattern = /^IMEI_/i;
             if (pattern.test(asset.Icon)) {
                 AssetImg = 'http://upload.quiktrak.co/Attachment/images/'+asset.Icon+'?'+ new Date().getTime();
             }
-        }
+        } 
 
         console.log(asset);
         mainView.router.load({
@@ -841,7 +858,7 @@ App.onPageInit('asset.status', function (page) {
     });
 
     var geolock = $$(page.container).find('input[name="Geolock"]');
-   /* var immob = $$(page.container).find('input[name="Immobilise"]');*/
+    /*var immob = $$(page.container).find('input[name="Immobilise"]');*/
     geolock.on('change', function(){        
         changeGeolockImmobState({id: TargetAsset.ASSET_ID, imei: TargetAsset.ASSET_IMEI, state: this.checked, name: this.attributes.name.value});
     });
@@ -853,6 +870,7 @@ App.onPageInit('asset.status', function (page) {
             showCustomMessage({title: POSINFOASSETLIST[TargetAsset.ASSET_IMEI].Name, text: LANGUAGE.PROMPT_MSG033});
         }         
     });*/
+
 });
 App.onPageInit('asset.edit', function (page) { 
     $$('.upload_photo, .asset_img img').on('click', function (e) {        
@@ -995,12 +1013,13 @@ App.onPageInit('alarms.assets', function (page) {
         return 0;
     }); 
 
-    //console.log(newAssetlist);
+    console.log(newAssetlist);
     
     var virtualAlarmsAssetsList = App.virtualList('.alarmsAssetList', { 
         items: newAssetlist,
-        height: 88,
-        searchAll: function (query, items) {           
+        height: 44,
+        searchAll: function (query, items) {
+            console.log(items);
             var foundItems = [];        
             for (var i = 0; i < items.length; i++) {           
                 // Check if title contains query string
@@ -1021,33 +1040,24 @@ App.onPageInit('alarms.assets', function (page) {
         },*/
         renderItem: function (index, item) {
             var ret = '';
-            var assetImg = getAssetImg(item, {'assetList':true}); 
 
             ret +=  '<li data-index="'+index+'">';
-            ret +=      '<label class="label-checkbox item-content no-fastclick">';
+            ret +=      '<label class="label-checkbox item-content">';
                  if (item.Selected) {
                     ret +=          '<input type="checkbox" name="alarms-assets" value="" data-id="' + item.Id + '" data-imei="' + item.IMEI + '" checked="true" >';
                 }else{
                     ret +=          '<input type="checkbox" name="alarms-assets" value="" data-id="' + item.Id + '" data-imei="' + item.IMEI + '" >';
-                }          
-            //ret +=          '<input type="checkbox" name="alarms-assets" value="" data-imei="' + item.IMEI + '" data-id="' + item.Id + '">';
-            ret +=          '<div class="item-media">'+assetImg+'</div>';
+                } 
+            ret +=          '<div class="item-media"><i class="icon icon-form-checkbox"></i></div>';
             ret +=          '<div class="item-inner">';
-            ret +=              '<div class="item-title-row">';
-            ret +=                  '<div class="item-title ">' + item.Name + '</div>';
-            ret +=                  '<div class="item-after">';
-            ret +=                      '<i class="icon icon-form-checkbox"></i>';
-            ret +=                  '</div>';
-            ret +=              '</div>';
+            ret +=              '<div class="item-title">' + item.Name + '</div>';
             ret +=          '</div>';
             ret +=      '</label>';
             ret +=  '</li>';
             
             return  ret;
         }
-    }); 
-
-
+    });  
 
     var searchbarAlarmsAssets = App.searchbar(searchForm, {
         searchList: '.alarmsAssetList',
@@ -1055,16 +1065,10 @@ App.onPageInit('alarms.assets', function (page) {
         found: '.list-block-search-alarms-assets',
         notFound: '.alarms-assets-search-nothing-found',
         onDisable: function(s){
-            $(s.container).slideUp();
+           // $(s.container).slideUp();
         }
     });
     
-    $$(page.container).find('.button_search').on('click', function(){        
-        $('.searchbarAlarmsAssets').slideDown(400, function(){
-            $$('.searchbar input').focus();
-        });                
-    });
-
     var SelectAll = $$(page.container).find('input[name="select-all"]');
     
     SelectAll.on('change', function(){          
@@ -1095,7 +1099,7 @@ App.onPageInit('alarms.assets', function (page) {
                 assets.push(value.IMEI);
             }               
         });
-        //console.log(assets);
+        console.log(assets);
         if (assets.length > 0) {
             mainView.router.load({
                 url:'resources/templates/alarms.select.html',
@@ -1118,9 +1122,8 @@ App.onPageInit('alarms.select', function (page) {
 
     var alarm = $$(page.container).find('input[name = "checkbox-alarm"]');    
 
-    var alarmFields = ['bilge','power','accOn','geolock','geofenceIn','geofenceOut','accOff'];  
+    var alarmFields = ['bilge','power','accOn','geolock','geofenceIn','geofenceOut','accOff'];
    
-
     var allCheckboxesLabel = $$(page.container).find('label.item-content');
     var allCheckboxes = allCheckboxesLabel.find('input');
     var assets = $$(page.container).find('input[name="Assets"]').val();
@@ -1192,12 +1195,13 @@ var virtualGeofenceList = null;
 App.onPageInit('geofence', function (page) {
     var geofenceListContainer = $$(page.container).find('.geofenceList');
     var geofenceSearchForm = $$(page.container).find('.searchbarGeofence');
+    
     var geofenceList = getGeoFenceList();
     var arrGeofenceList = [];
     var geofenceListKeys = Object.keys(geofenceList);
         
     $.each(geofenceListKeys, function( index, value ) {
-        geofenceList[value].Name = geofenceList[value].Name.toLowerCase();        
+        geofenceList[value].Name = geofenceList[value].Name.toLowerCase();          
         arrGeofenceList.push(geofenceList[value]);       
     });
 
@@ -1206,7 +1210,7 @@ App.onPageInit('geofence', function (page) {
         if(a.Name > b.Name) return 1;
         return 0;
     });    
-    console.log(arrGeofenceList);
+  
     if (virtualGeofenceList) {
         virtualGeofenceList.destroy();
     }
@@ -1225,24 +1229,24 @@ App.onPageInit('geofence', function (page) {
             var ret =   '<li class="item-content" id="'+ item.Code +'" data-code="'+ item.Code +'" data-index="'+ index +'">' +
                             '<div class="item-inner">' +
                                 '<div class="item-title-row">' +
-                                    '<div class="item-title">'+ item.Name +'</div>' +
+                                    '<div class="item-title">'+ toTitleCase(item.Name) +'</div>' +
                                     '<div class="item-after "><a href="#" class="item-link geofence_menu"><i class="f7-icons icon-geofence_menu color-boatwatch"></i></a></div>' +
                                 '</div>' +                                
-                                '<div class="item-text">'+ item.Address +'</div>' +
+                                '<div class="item-text color-boatwatch">'+ item.Address +'</div>' +
                             '</div>' +
                         '</li>'; 
             return  ret;
         }
     });  
     
-    initSearchbar(geofenceSearchForm);
+    /*console.log(geofenceSearchForm);
+    if (geofenceSearchForm.length > 1) {
+        geofenceSearchForm = geofenceSearchForm[geofenceSearchForm.length - 1];
+    }
+    console.log(geofenceSearchForm);*/
+    initSearchbar(geofenceSearchForm); 
     
-
-    $$('.button_search').on('click', function(){        
-        $('.searchbarGeofence').slideDown(400, function(){
-            $$('.searchbarGeofence input').focus();
-        });                
-    });
+   
     $$('.addGeofence').on('click', function(e){
         var assetList = formatArrAssetList();
         mainView.router.load({
@@ -1277,7 +1281,9 @@ App.onPageInit('geofence', function (page) {
                 onClick: function () {
                     App.confirm(LANGUAGE.PROMPT_MSG011, function(){
                         deleteGeofence(geofenceCode, listIndex);
-                    });  
+                    });
+                    
+                    
                 }
             },
             {
@@ -1301,11 +1307,11 @@ App.onPageInit('geofence.add', function (page) {
     var timeRangeblocks = $$(page.container).find('.time_range_block');
     var searchGeofenceAddress = $$(page.container).find('form[name="searchGeofenceAddress"]');
     var container = $$(page.container).find('.page-content');
-   	var radius = $$(page.container).find('input[name="geolockRadius"]');   
+   	var radius = $$('body').find('input[name="geolockRadius"]');   
     var address =  $$(page.container).find('[name="geofenceAddress"]');
     var geofenceName = $$(page.container).find('input[name="geofenceName"]');
     var assets = $$(page.container).find('select[name="assets"]');
-
+    
     radius.on('change input', function(){
     	var value = this.value;
     	if (!value.match(/[^0-9]/g)) {
@@ -1315,7 +1321,7 @@ App.onPageInit('geofence.add', function (page) {
             } else{
                 MapTrack.flyToBounds([window.PosMarker.geofence.getBounds()],{padding:[8,8]});
             }
-        }     	
+        }      	
     });
 
     timeRangeState.on('change', function(){
@@ -1375,12 +1381,12 @@ App.onPageInit('geofence.add', function (page) {
 
         if (valRadius < 100 ) {
             valid = 0;
-            errorList.push(LANGUAGE.PROMPT_MSG008);           
+            errorList.push(LANGUAGE.PROMPT_MSG008);   
         }
 
         if (!white_spaces.test(valGeofenceName)) {
             valid = 0;
-            errorList.push(LANGUAGE.PROMPT_MSG025);            
+            errorList.push(LANGUAGE.PROMPT_MSG025);   
         }
 
         alarmType.find('option:checked').each(function(){ 
@@ -1388,7 +1394,7 @@ App.onPageInit('geofence.add', function (page) {
         });
         if (!valAlarmType) {
             valid = 0;
-            errorList.push(LANGUAGE.PROMPT_MSG026);            
+            errorList.push(LANGUAGE.PROMPT_MSG026);
         }else{
             valAlarmType = valAlarmType.substr(1);
         }  	
@@ -1453,7 +1459,9 @@ App.onPageInit('geofence.add', function (page) {
                     }else{
                         App.alert(LANGUAGE.PROMPT_MSG013);
                     }                  
-                    
+                        
+                    //console.log(result); 
+
                 },
                 error: function(XMLHttpRequest, textStatus, errorThrown){ 
                    App.hidePreloader(); App.alert(LANGUAGE.COM_MSG02);
@@ -1472,7 +1480,6 @@ App.onPageInit('geofence.add', function (page) {
             }else{
                 App.alert(LANGUAGE.PROMPT_MSG009);
             }
-            
         }
     	
     });
@@ -1491,7 +1498,7 @@ App.onPageInit('resetPwd', function (page) {
                 var userInfo = getUserinfo(); 
                 var url = API_URL.URL_RESET_PASSWORD.format(userInfo.MinorToken,
                         encodeURIComponent(password.old),
-                        encodeURIComponent(password.new)             
+                        encodeURIComponent(password.new)                 
                     ); 
                 //console.log(url);
                 App.showPreloader();
@@ -1553,8 +1560,7 @@ App.onPageInit('asset.alarm', function (page) {
 
         $.each(alarmFields, function( index, value ) {
             var field = $$(page.container).find('input[name = "checkbox-'+value+'"]');
-            if (!field.is(":checked")) {
-                
+            if (!field.is(":checked")) {                
                 alarmOptions.options = alarmOptions.options + parseInt(field.val(), 10);
             }else{
                 
@@ -1588,6 +1594,8 @@ App.onPageInit('asset.alarm', function (page) {
 
 
 App.onPageInit('asset.playback', function (page) {  
+    var dateStartText = $$(page.container).find('span.picker-date-start-text');
+    var dateEndText = $$(page.container).find('span.picker-date-end-text');
     var today = new Date();
  
     var pickerInlineStart = App.picker({
@@ -1602,7 +1610,8 @@ App.onPageInit('asset.playback', function (page) {
             var daysInMonth = new Date(picker.value[2], picker.value[0]*1 + 1, 0).getDate();
             if (values[1] > daysInMonth) {
                 picker.cols[1].setValue(daysInMonth);
-            }
+            }           
+            dateStartText.html(displayValues[0] + ' ' + values[1] + ', ' + values[2] + ' ' + values[3] + ':' + values[4]);
         },
      
         formatValue: function (p, values, displayValues) {
@@ -1613,8 +1622,8 @@ App.onPageInit('asset.playback', function (page) {
             // Months
             {
                 values: ('0 1 2 3 4 5 6 7 8 9 10 11').split(' '),
-                displayValues: ('January February March April May June July August September October November December').split(' '),
-                textAlign: 'left'
+                displayValues: ('Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec').split(' '),
+                textAlign: 'right'
             },
             // Days
             {
@@ -1671,6 +1680,8 @@ App.onPageInit('asset.playback', function (page) {
             if (values[1] > daysInMonth) {
                 picker.cols[1].setValue(daysInMonth);
             }
+            dateEndText.html(displayValues[0] + ' ' + values[1] + ', ' + values[2] + ' ' + values[3] + ':' + values[4]);
+
         },
      
         formatValue: function (p, values, displayValues) {
@@ -1681,8 +1692,8 @@ App.onPageInit('asset.playback', function (page) {
             // Months
             {
                 values: ('0 1 2 3 4 5 6 7 8 9 10 11').split(' '),
-                displayValues: ('January February March April May June July August September October November December').split(' '),
-                textAlign: 'left'
+                displayValues: ('Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec').split(' '),
+                textAlign: 'right'
             },
             // Days
             {
@@ -1742,10 +1753,9 @@ App.onPageInit('asset.playback', function (page) {
         var to = moment().utc().format(window.COM_TIMEFORMAT2);
         
         getHisPosArray(from, to);
-    });                           
+    });                             
  
 });
-
 
 
 App.onPageInit('asset.location', function (page) { 
@@ -1766,6 +1776,7 @@ App.onPageInit('asset.location', function (page) {
         showStreetView(params);        
     });
 });
+
 
 App.onPageInit('asset.track', function (page) {     
     showMap();
@@ -1817,7 +1828,7 @@ App.onPageBeforeRemove('asset.track', function(page){
 App.onPageInit('asset.playback.show', function (page) { 
 
     var rangeInput = $$(page.container).find('input[name="rangeInput"]');
-    var startPlayback = $$(page.container).find('.startPlayback');
+    var startPlayback = $$('body').find('.startPlayback');
     showMapPlayback();
     var valueMax = HistoryArray.length - 1;
     rangeInput.attr('max',valueMax);
@@ -1893,9 +1904,7 @@ App.onPageInit('asset.playback.show', function (page) {
         //posDir.html(asset.posInfo.direct);        
         posMileage.html((Protocol.Helper.getMileageValue(asset.Unit, HistoryArray[value].mileage) + parseInt(asset.InitMileage) + parseInt(asset._FIELD_FLOAT7)) + '&nbsp;' + Protocol.Helper.getMileageUnit(asset.Unit)); 
         posSpeed.html(Protocol.Helper.getSpeedValue(asset.Unit, HistoryArray[value].speed) + ' ' + Protocol.Helper.getSpeedUnit(asset.Unit));
-        //posLatlng.html(HistoryArray[value].lat +', ' + HistoryArray[value].lng);
         posLatlng.html('GPS: ' + Protocol.Helper.convertDMS(HistoryArray[value].lat, HistoryArray[value].lng));
-        //data.posLatlng.html('GPS: ' + Protocol.Helper.convertDMS(latlng.lat, latlng.lng);             
         MapTrack.setView([HistoryArray[value].lat, HistoryArray[value].lng]);        
         if(lastQueryPosinfo && Math.floor(HistoryArray[value].lat * 10000) / 10000 === lastQueryPosinfo.lat && Math.floor(HistoryArray[value].lng * 10000) / 10000 === lastQueryPosinfo.lng ){            
             posAddress.html(lastQueryPosinfo.address);
@@ -1928,6 +1937,11 @@ App.onPageBeforeRemove('asset.playback.show', function(page){
 
 
 
+
+
+ 
+
+
 function clearUserInfo(){
     getPlusInfo();
     var mobileToken = !localStorage.PUSH_MOBILE_TOKEN? '' : localStorage.PUSH_MOBILE_TOKEN;
@@ -1938,18 +1952,18 @@ function clearUserInfo(){
     var MinorToken = userInfo.MinorToken;      
     var MajorToken = userInfo.MajorToken;
     window.PosMarker = {};
-	TargetAsset = {};
-	POSINFOASSETLIST = {}; 
+    TargetAsset = {};
+    POSINFOASSETLIST = {}; 
     var alarmList = getAlarmList();    
     var pushList = getNotificationList();
     
     localStorage.clear(); 
- 
-
+    
+    
     if (updateAssetsPosInfoTimer) {
         clearInterval(updateAssetsPosInfoTimer);
     }
-    
+
     if (virtualAssetList) {
         virtualAssetList.deleteAllItems();
     }
@@ -1957,19 +1971,20 @@ function clearUserInfo(){
     if (alarmList) {
         localStorage.setItem("COM.QUIKTRAK.LIVE.ALARMLIST", JSON.stringify(alarmList)); 
     }
-        
+
     if (pushList) {
         localStorage.setItem("COM.QUIKTRAK.LIVE.NOTIFICATIONLIST.BW", JSON.stringify(pushList));
     }
-
+    
     if (deviceToken) {
         localStorage.PUSH_DEVICE_TOKEN = deviceToken; 
     }    
     if (mobileToken) {
         localStorage.PUSH_MOBILE_TOKEN = mobileToken;
     }
+   
+    JSON1.request(API_URL.URL_GET_LOGOUT.format(mobileToken, deviceToken), function(result){ console.log(result); });         
     
-    JSON1.request(API_URL.URL_GET_LOGOUT.format(mobileToken, deviceToken), function(result){ console.log(result); });     
     $$("input[name='account']").val(userName);
 }
 
@@ -2009,15 +2024,17 @@ function reGetPushDetails(){
     }           
 }
 
-function login(){    
+
+function login(){ 
+    //alert('login() called');   
     getPlusInfo();
     //hideKeyboard();
-    
+    //
     //App.showPreloader();
-    var mobileToken = !localStorage.PUSH_MOBILE_TOKEN? '123' : localStorage.PUSH_MOBILE_TOKEN;
-    var appKey = !localStorage.PUSH_APP_KEY? '4SSm4aQPNj6uI5NlWmGsGA' : localStorage.PUSH_APP_KEY;
-    var deviceToken = !localStorage.PUSH_DEVICE_TOKEN? '123' : localStorage.PUSH_DEVICE_TOKEN;
-    var deviceType = !localStorage.DEVICE_TYPE? 'android' : localStorage.DEVICE_TYPE;
+    var mobileToken = !localStorage.PUSH_MOBILE_TOKEN? '' : localStorage.PUSH_MOBILE_TOKEN;
+    var appKey = !localStorage.PUSH_APP_KEY? '' : localStorage.PUSH_APP_KEY;
+    var deviceToken = !localStorage.PUSH_DEVICE_TOKEN? '' : localStorage.PUSH_DEVICE_TOKEN;
+    var deviceType = !localStorage.DEVICE_TYPE? '' : localStorage.DEVICE_TYPE;
     var account = $$("input[name='account']");
     var password = $$("input[name='password']"); 
 
@@ -2025,7 +2042,7 @@ function login(){
                                      encodeURIComponent(!password.val()? localStorage.PASSWORD: password.val()), 
                                      appKey, 
                                      mobileToken, 
-                                     encodeURIComponent(deviceToken), 
+                                     deviceToken, 
                                      deviceType);                                
     JSON1.request(urlLogin, function(result){
            console.log(result);
@@ -2040,9 +2057,9 @@ function login(){
                 setAssetList(result.Data.Devices);               
                
                 //init_AssetList(); 
-                //initSearchbar();
-                
-                getNewNotifications();  
+                //initSearchbar();  
+                //webSockConnect();
+                getNewNotifications();
                 App.closeModal();                
             }else{                
                 App.alert(LANGUAGE.LOGIN_MSG01);
@@ -2110,6 +2127,7 @@ function init_AssetList() {
     }); 
   
     virtualAssetList.replaceAllItems(newAssetlist);   
+   
     
     //setTimeout(function(){
         updateAssetsPosInfoTimer = setInterval(function(){
@@ -2132,9 +2150,7 @@ function initSearchbar(searchContainer){
             searchIn: '.item-title',
             found: '.searchbar-found',
             notFound: '.searchbar-not-found',
-            onDisable: function(s){
-                $(s.container).slideUp();
-            }
+            
         });
     }else{
         if (searchbarGeofence) {        
@@ -2143,31 +2159,13 @@ function initSearchbar(searchContainer){
         searchbarGeofence = App.searchbar(searchContainer, {
             searchList: '.list-block-search-geofence',
             searchIn: '.item-title',
-            found: '.searchbar-found',
-            notFound: '.searchbar-not-found',
-            onDisable: function(s){
-                $(s.container).slideUp();
-            }
+            found: '.searchbar-found-geofence',
+            notFound: '.searchbar-not-found-geofence',
+            
         });
     }
         
 }
-
-function initSearchbarGeofence(){    
-    if (searchbarGeofence) {        
-        searchbarGeofence.destroy();
-    }
-    searchbarGeofence = App.searchbar('.searchbarGeofence', {
-        searchList: '.list-block-search',
-        searchIn: '.item-title',
-        found: '.searchbar-found',
-        notFound: '.searchbar-not-found',
-        onDisable: function(s){
-            $(s.container).slideUp();
-        }
-    });
-}
-
 
 function loadProfilePage(){
     var userInfo = getUserinfo().User;    
@@ -2271,8 +2269,8 @@ function loadPageSupport(){
   
     var href = API_URL.URL_SUPPORT.format(param.name,param.loginName,param.email,param.phone,param.service); 
     
-    if (typeof navigator !== "undefined" && navigator.app) {                
-        navigator.app.loadUrl(href, {openExternal: true}); 
+    if (window.plus) {
+        plus.runtime.openURL(href);            
     } else {
         window.open(href,'_blank');
     }
@@ -2353,7 +2351,6 @@ function showStreetView(params){
 }
 
 function showMap(params){ 
-   
     var asset = TargetAsset.ASSET_IMEI;   
     var latlng = [];
     if (params) {
@@ -2374,11 +2371,18 @@ function showMapPlayback(){
     var asset = TargetAsset.ASSET_IMEI;   
     var latlng = [POSINFOASSETLIST[asset].posInfo.lat, POSINFOASSETLIST[asset].posInfo.lng];
     MapTrack = Protocol.Helper.createMap({ target: 'map', latLng: latlng, zoom: 15 }); 
-    window.PosMarker[asset].addTo(MapTrack);
+    window.PosMarker[asset].addTo(MapTrack); 
 
     if (!StreetViewService) {
         StreetViewService = new google.maps.StreetViewService();
     }
+    
+    var polylinePoints = [];
+         
+    $.each( HistoryArray, function(index,value){  
+        var point = new L.LatLng(value.lat, value.lng);
+        polylinePoints.push(point);  
+    });
 
     if (EventsArray) {
         var eventPoints = L.markerClusterGroup({'maxClusterRadius':35,});
@@ -2415,15 +2419,7 @@ function showMapPlayback(){
         });
         MapTrack.addLayer(eventPoints);
     }
-    
-    var polylinePoints = [];
-         
-    $.each( HistoryArray, function(index,value){  
-        var point = new L.LatLng(value.lat, value.lng);
-        polylinePoints.push(point);  
-    });
 
-    
     var polylineOptionsBG = {
             color: '#6199CC',            
             weight: 6,
@@ -2471,9 +2467,9 @@ function updateGeofenceMarkerGroup(assets, geofenceEdit){
             var latlng = geofenceMarkerGroup.getBounds().getCenter();            
             if (!geofenceEdit) {
                 window.PosMarker.geofence.setLatLng(latlng); 
-            }            
+            }             
             MapTrack.flyToBounds([geofenceMarkerGroup.getBounds(),window.PosMarker.geofence.getBounds()],{padding:[8,8]});
-                        
+            
             updateGeofenceAddress(latlng);
         } 
         geofenceMarkerGroup.addTo(MapTrack);
@@ -2490,6 +2486,7 @@ function updateGeofenceAddress(latlng){
         App.hideProgressbar(); 
     }); 
 }
+
 function showMapGeofence(geofence){ 
     var latlng = ['-33.869444', '151.208333'];
     var radius = 300;
@@ -2497,8 +2494,8 @@ function showMapGeofence(geofence){
     var assets = [];
     var editFlag = 0;
 
-    if (geofence) {    
-        editFlag = 1;                   
+    if (geofence) { 
+        editFlag = 1;               
         radius = geofence.Radius;     
         latlng = [ geofence.Lat, geofence.Lng ];
         if (geofence.SelectedAssetList && geofence.SelectedAssetList.length > 0) {
@@ -2530,7 +2527,8 @@ function showMapGeofence(geofence){
 
 function onMapGeofenceClick(e) {
     window.PosMarker.geofence.setLatLng(e.latlng); 
-    updateGeofenceAddress(e.latlng);    
+
+    updateGeofenceAddress(e.latlng);      
 }
 
 function loadStatusPage(){
@@ -2545,7 +2543,7 @@ function loadStatusPage(){
         if (asset.posInfo.positionTime) {
             time = asset.posInfo.positionTime.format(window.COM_TIMEFORMAT);
         }
-       
+        
         var latlng = {};
         latlng.lat = asset.posInfo.lat;
         latlng.lng = asset.posInfo.lng;  
@@ -2593,14 +2591,15 @@ function loadStatusPage(){
         } 
         if (assetFeaturesStatus.immob) {
             assetStats.immob = assetFeaturesStatus.immob.value;
-        }         
+        } 
 
+        
         mainView.router.load({
             url:'resources/templates/asset.status.html',
             context:{
                 Name: asset.Name,                           
                 Time: time,
-                Direction: deirectionCardinal+' ('+direct+'&deg;)', 
+                Direction: deirectionCardinal+' ('+direct+'&deg;)',            
                 Speed: speed,                    
                 Address: LANGUAGE.COM_MSG08,
                 Voltage: assetStats.voltage,
@@ -2612,23 +2611,23 @@ function loadStatusPage(){
                 Fuel: assetStats.fuel,
                 Temperature: assetStats.temperature,
                 StoppedDuration: assetStats.stoppedDuration,
+                ImmobState: assetStats.immob,   
                 GeolockState: assetStats.geolock,
                 Coords: 'GPS: ' + Protocol.Helper.convertDMS(latlng.lat, latlng.lng),
             }
         }); 
-        
-        if (latlng.lat !== 0 && latlng.lng !== 0) {
+
+        if (parseFloat(latlng.lat) !== 0 && parseFloat(latlng.lng) !== 0) {
             Protocol.Helper.getAddressByGeocoder(latlng,function(address){
                 $$('body .display_address').html(address);
             });
         }else{
             $$('body .display_address').html(LANGUAGE.COM_MSG11);
         }
-        
     }else{
         App.alert(LANGUAGE.PROMPT_MSG007);
     }
-        
+	    
     
 }
 
@@ -2816,7 +2815,7 @@ function loadAlarmPage(){
         
     }
 
-   
+    
 
     mainView.router.load({
         url:'resources/templates/asset.alarm.html',
@@ -2864,7 +2863,7 @@ function getMarkerDataTableInfoPin(point){
     endTime = moment(endTime).local().format(window.COM_TIMEFORMAT);
     var dateDifference = Protocol.Helper.getDifferenceBTtwoDates(beginTime,endTime);
     
-    var duration = moment.duration(dateDifference, "milliseconds").format('d[d] h[h] m[m] s[s]');
+    var duration = moment.duration(dateDifference, "milliseconds").format('d[d] h[h] m[m]');
 
     markerData += '<table cellpadding="0" cellspacing="0" border="0" class="marker-data-table">';
     switch (point.eventClass){
@@ -2938,7 +2937,7 @@ function loadTrackPage(params){
         time : '',
     };
 //{"title":"Acc off","type":65536,"imei":"0352544073967920","name":"Landcruiser Perth","lat":-32.032898333333335,"lng":115.86817722222216,"speed":0,"direct":0,"time":"2018-04-13 10:16:51"}
-    if ((params && parseFloat(params.lat) !== 0 && parseFloat(params.lng) !== 0) || (parseFloat(asset.posInfo.lat) !== 0 && parseFloat(asset.posInfo.lng) !== 0) ){     
+    if ((params && parseFloat(params.lat) !== 0 && parseFloat(params.lng) !== 0) || (parseFloat(asset.posInfo.lat) !== 0 && parseFloat(asset.posInfo.lng) !== 0) ){        
         if (params) {            
             window.PosMarker[TargetAsset.ASSET_IMEI] = L.marker([params.lat, params.lng], {icon: Protocol.MarkerIcon[0]}); 
             window.PosMarker[TargetAsset.ASSET_IMEI].setLatLng([params.lat, params.lng]);  
@@ -2951,7 +2950,7 @@ function loadTrackPage(params){
             details.latlng.lng = params.lng;
             details.name = params.name;
             details.time = params.time;
-            details.direct = parseInt(params.direct);
+            details.direct = parseInt(params.direct);             
             
         }else{            
             window.PosMarker[TargetAsset.ASSET_IMEI] = L.marker([asset.posInfo.lat, asset.posInfo.lng], {icon: Protocol.MarkerIcon[0]}); 
@@ -2970,7 +2969,6 @@ function loadTrackPage(params){
         }
         
         var deirectionCardinal = Protocol.Helper.getDirectionCardinal(details.direct);  
-        
         checkMapExisting();        
         mainView.router.load({
             url:details.templateUrl,
@@ -3052,7 +3050,7 @@ function updateMarkerPositionTrack(data){
             latlng.lat = asset.posInfo.lat;
             latlng.lng = asset.posInfo.lng;
 
-           /* if (data.routeButton) {
+            /*if (data.routeButton) {
                 data.routeButton.attr('href',API_ROUTE+latlng.lat+','+latlng.lng);
             }*/
 
@@ -3060,9 +3058,7 @@ function updateMarkerPositionTrack(data){
                 data.panoButton.data('lat',latlng.lat);
                 data.panoButton.data('lng',latlng.lng);
             }
-
             if (data.posLatlng) {
-                //data.posLatlng.html(latlng.lat + ', ' + latlng.lng);
                 data.posLatlng.html('GPS: ' + Protocol.Helper.convertDMS(latlng.lat, latlng.lng));             
             }
            
@@ -3108,7 +3104,8 @@ function getHisPosArray(from, to){
                     var mileage = (Protocol.Helper.getMileageValue(asset.Unit, firstPoint[6]) + parseInt(asset.InitMileage) + parseInt(asset._FIELD_FLOAT7)) + '&nbsp;' + Protocol.Helper.getMileageUnit(asset.Unit);
                     var time = moment(firstPoint[0],'X').format(window.COM_TIMEFORMAT);                    
 
-									    
+					
+				    
 				    window.PosMarker[TargetAsset.ASSET_IMEI] = L.marker([latlng.lat, latlng.lng], {icon: Protocol.MarkerIcon[0]}); 
 				    window.PosMarker[TargetAsset.ASSET_IMEI].setLatLng([latlng.lat, latlng.lng]);
 				    POSINFOASSETLIST[TargetAsset.ASSET_IMEI].posInfo.lat = latlng.lat;
@@ -3125,7 +3122,7 @@ function getHisPosArray(from, to){
 			                Address: LANGUAGE.COM_MSG08,
                             Lat: latlng.lat,
                             Lng: latlng.lng, 
-                            Coords: 'GPS: ' + Protocol.Helper.convertDMS(latlng.lat, latlng.lng),            		                
+                            Coords: 'GPS: ' + Protocol.Helper.convertDMS(latlng.lat, latlng.lng),                		                
 			            }
 			        });
 
@@ -3240,8 +3237,7 @@ function updateAssetsPosInfo(){
 function updateAssetsListStats(){
     var assetFeaturesStatus = '';
     var state = '';
-    var value = '';   
-    /*console.log(POSINFOASSETLIST);     */
+    var value = '';        
     $.each( POSINFOASSETLIST, function( key, val ) {          
         assetFeaturesStatus = Protocol.Helper.getAssetStateInfo(POSINFOASSETLIST[key]); 
         if (assetFeaturesStatus.GSM) {
@@ -3296,7 +3292,7 @@ function updateAssetsListStats(){
             value = $$("#driver-value"+key);        
             value.html(assetFeaturesStatus.battery.value); 
         } */   
-    }); 
+    });
 
     var activePage = mainView.activePage;   
     if ( typeof(activePage) != 'undefined' && activePage.name == "asset.status") {          
@@ -3310,10 +3306,10 @@ function updateAssetsListStats(){
                     var statusPageContainer = $$('.status_page'); 
                     var stoppedDurationContainer = statusPageContainer.find('.position_stoppedDuration');
                     
-
                     if (asset.posInfo.positionTime) {
                         statusPageContainer.find('.position_time').html(asset.posInfo.positionTime.format(window.COM_TIMEFORMAT));
                     }
+                                    
                     statusPageContainer.find('.position_speed').html(Protocol.Helper.getSpeedValue(asset.Unit, asset.posInfo.speed) + ' ' + Protocol.Helper.getSpeedUnit(asset.Unit));  
                     statusPageContainer.find('.position_direction').html(deirectionCardinal+' ('+direct+'&deg;)');
 
@@ -3352,12 +3348,10 @@ function updateAssetsListStats(){
                     } 
                     if (assetFeaturesStatus.stopped && stoppedDurationContainer.length > 0) {
                         stoppedDurationContainer.html(assetFeaturesStatus.stopped.duration);
-                    }else if (stoppedDurationContainer.length > 0) {
-                        stoppedDurationContainer.html('-');
-                    }
+                    } 
 
                     /*statusPageContainer.find('.position_immob').removeClass('state-0 state-1 state-2 state-3').addClass(assetFeaturesStatus.immob.state);*/                
-                    statusPageContainer.find('.position_geolock').removeClass('state-0 state-1 state-2 state-3').addClass(assetFeaturesStatus.geolock.state);            
+                    statusPageContainer.find('.position_geolock').removeClass('state-0 state-1 state-2 state-3').addClass(assetFeaturesStatus.geolock.state);
                 }                 
             } 
         }
@@ -3515,7 +3509,8 @@ function setAssetListPosInfo(listObj){
     };
     //console.log(data);
     JSON1.requestPost(url,data, function(result){   
-            //console.log(result);                       
+            //console.log(result);  
+                               
             if (result.MajorCode == '000') {
                 var data = result.Data;    
                 if (result.Data) {
@@ -3529,7 +3524,7 @@ function setAssetListPosInfo(listObj){
                         POSINFOASSETLIST[imei].initPosInfo(posData); 
                         
                     });
-                    
+                     
                 }
                    
                 //console.log(POSINFOASSETLIST);
@@ -3539,10 +3534,10 @@ function setAssetListPosInfo(listObj){
                 //console.log(result);
             }
             init_AssetList(); 
-            initSearchbar(); 
-            localStorage.loginDone = 1;
+            initSearchbar();
+            localStorage.loginDone = 1;  
         },
-        function(){localStorage.loginDone = 1; }
+        function(){ localStorage.loginDone = 1;}
     ); 
 }
 
@@ -3667,7 +3662,9 @@ function getNewNotifications(){
         JSON1.request(url, function(result){
                 App.hideProgressbar();            
                 notificationChecked = 1;
-               
+                if(window.plus) {
+                    plus.push.clear();
+                }
                 
                 console.log(result);                       
                 if (result.MajorCode == '000') {
@@ -3813,7 +3810,7 @@ function showNotification(list){
                     data = list[i];                
                 } 
             } 
-            if (data) {                                        
+            if (data) {
                 if (isNaN(index)) {                    
                     index = 0;
                 }else{
@@ -3828,13 +3825,13 @@ function showNotification(list){
                 if (data.title) {
                     data.title = toTitleCase(data.title);
                 }                 
-                newList.unshift(data);                           
+                newList.unshift(data);                          
             }
         }
         if (virtualNotificationList && newList.length !== 0) {
             virtualNotificationList.prependItems(newList); 
         }   
-    }    
+    }       
 }
 
 function processClickOnPushNotification(msgJ){    
@@ -4021,6 +4018,7 @@ function formatArrAssetList(){
 
 
 /* ASSET EDIT PHOTO */
+
 var cropper = null;
 var resImg = null;
 function initCropper(){     
