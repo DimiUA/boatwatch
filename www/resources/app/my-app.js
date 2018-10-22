@@ -141,7 +141,7 @@ function setupPush(){
                         setTimeout(function(){
                             //alert('before processClickOnPushNotification');
                             processClickOnPushNotification([data.additionalData.payload]);
-                            App.showIndicator();               
+                            App.hideIndicator();               
                         },1000); 
                     }
                 }, 1000); 
